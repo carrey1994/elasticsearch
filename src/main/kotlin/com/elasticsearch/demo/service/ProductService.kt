@@ -7,6 +7,8 @@ import com.elasticsearch.demo.model.Product
 import com.elasticsearch.demo.model.ProductDocument
 import com.elasticsearch.demo.repository.ProductRepository
 import com.elasticsearch.demo.repository.ProductSearchRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.elasticsearch.client.elc.NativeQuery
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.springframework.stereotype.Service
@@ -53,5 +55,9 @@ class ProductService(
 
 		val searchHits = elasticsearchOperations.search(query, ProductDocument::class.java)
 		return searchHits.map { ProductResponse.from(it.content) }.toList()
+	}
+
+	fun page(keyword: String, pageable: Pageable): Page<ProductResponse> {
+		return productSearchRepository.searchPageByName(keyword, pageable).map { ProductResponse.from(it) }
 	}
 }

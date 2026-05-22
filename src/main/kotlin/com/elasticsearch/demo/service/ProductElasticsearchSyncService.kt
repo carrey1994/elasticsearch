@@ -18,6 +18,7 @@ class ProductElasticsearchSyncService(
 
 	@Transactional(readOnly = true)
 	fun reindexAll() {
+
 		val indexOps = elasticsearchOperations.indexOps(ProductDocument::class.java)
 
 		if (indexOps.exists()) {
@@ -29,13 +30,17 @@ class ProductElasticsearchSyncService(
 		indexOps.createWithMapping()
 
 		val products = productRepository.findAll()
-		if (products.isEmpty()) {
-			log.info("No products in database; Elasticsearch index is empty")
-			return
-		}
+		if (products.isEmpty()) return
 
-		val documents = products.map { ProductDocument.from(it) }
-		productSearchRepository.saveAll(documents)
-		log.info("Indexed {} product(s) from database into Elasticsearch", documents.size)
+		val batchSize = 500  // 👈 重點
+
+		products.chunked(batchSize).forEachIndexed { idx, batch ->
+
+			val docs = batch.map { ProductDocument.from(it) }
+
+			productSearchRepository.saveAll(docs)
+
+			log.info("Indexed batch {} (size={})", idx, docs.size)
+		}
 	}
 }

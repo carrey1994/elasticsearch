@@ -18,7 +18,7 @@ spring:
 app:
   elasticsearch:
     # On startup: drop products index, recreate mapping, bulk load from DB
-    reindex-on-startup: true
+    reindex-on-startup: false
 
 server:
   port: 8080

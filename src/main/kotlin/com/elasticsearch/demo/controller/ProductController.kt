@@ -4,6 +4,8 @@ import com.elasticsearch.demo.dto.CreateProductRequest
 import com.elasticsearch.demo.dto.ProductResponse
 import com.elasticsearch.demo.service.ProductService
 import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -26,4 +28,8 @@ class ProductController(
 	@GetMapping
 	fun search(@RequestParam("q") keyword: String): List<ProductResponse> =
 		productService.search(keyword)
+
+	@GetMapping("search")
+	fun page(@RequestParam("q") keyword: String, pageable: Pageable): Page<ProductResponse> =
+		productService.page(keyword, pageable)
 }
