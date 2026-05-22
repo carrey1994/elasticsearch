@@ -1,0 +1,28 @@
+{
+  "index": {
+    "number_of_shards": "1",
+    "number_of_replicas": "0",
+    "analysis": {
+      "analyzer": {
+        "product_index": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "cjk_width",
+            "cjk_bigram"
+          ]
+        },
+        "product_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "cjk_width",
+            "cjk_bigram"
+          ]
+        }
+      }
+    }
+  }
+}

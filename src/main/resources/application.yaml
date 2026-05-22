@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: demo
+  datasource:
+    url: jdbc:postgresql://localhost:5000/demo
+    username: demo
+    password: demo
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  elasticsearch:
+    uris: http://localhost:9200
+
+app:
+  elasticsearch:
+    # On startup: drop products index, recreate mapping, bulk load from DB
+    reindex-on-startup: true
+
+server:
+  port: 8080

@@ -1,0 +1,3 @@
+app:
+  elasticsearch:
+    reindex-on-startup: false
