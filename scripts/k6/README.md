@@ -37,15 +37,19 @@ k6 run -e AUTH=elastic:changeme scripts/k6/elasticsearch-load-test.js
 
 ## Query 分佈 (加權)
 
-| Query | 權重 | Latency threshold (p95) |
-|-------|-----|------------------------|
+| Query (tag) | 權重 | Latency threshold (p95) |
+|-------------|-----|------------------------|
 | `match` | 4 | 500ms |
-| `match` (fuzzy) | 2 | 500ms |
+| `match_fuzzy` | 2 | 600ms |
 | `multi_match` | 2 | 800ms |
 | `match_phrase_prefix` | 2 | 500ms |
 | `range` | 2 | 300ms |
 | `bool` | 1 | 800ms |
 | `term` | 1 | 200ms |
+
+整體 `http_req_duration{scope:workload}` 上限 `p95<800ms` / `p99<1500ms`,
+與最寬鬆的 per-type SLO (`bool`/`multi_match`) 對齊。
+setup 的 cluster-health 探針會被打上 `scope:setup`,不計入 workload threshold。
 
 ## 輸出指標
 

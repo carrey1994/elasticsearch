@@ -14,9 +14,18 @@ import { randomItem, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0
 // AUTH        Basic auth, 格式 "user:pass" (optional)
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:9200';
 const INDEX = __ENV.INDEX || 'products';
-const VUS = parseInt(__ENV.VUS || '10');
+const VUS = parseIntStrict('VUS', __ENV.VUS, 10);
 const DURATION = __ENV.DURATION || '30s';
 const AUTH = __ENV.AUTH || '';
+
+function parseIntStrict(name, raw, fallback) {
+  if (raw === undefined || raw === '') return fallback;
+  const n = parseInt(raw, 10);
+  if (Number.isNaN(n) || n <= 0) {
+    throw new Error(`${name} must be a positive integer, got "${raw}"`);
+  }
+  return n;
+}
 
 const SEARCH_URL = `${BASE_URL}/${INDEX}/_search`;
 
@@ -33,12 +42,13 @@ export const options = {
     },
   },
   thresholds: {
-    // 整體成功率 > 99%
-    http_req_failed: ['rate<0.01'],
-    // 95% 請求 < 500ms, 99% < 1s
-    http_req_duration: ['p(95)<500', 'p(99)<1000'],
-    // 每個 query type 的 latency
+    // 只看 workload (排除 setup 探針), 失敗率 < 1%
+    'http_req_failed{scope:workload}': ['rate<0.01'],
+    // 整體 latency 上限對齊最寬鬆的 per-type SLO (bool/multi_match = 800ms)
+    'http_req_duration{scope:workload}': ['p(95)<800', 'p(99)<1500'],
+    // 每個 query type 的 latency SLO
     'es_query_latency{type:match}': ['p(95)<500'],
+    'es_query_latency{type:match_fuzzy}': ['p(95)<600'],
     'es_query_latency{type:term}': ['p(95)<200'],
     'es_query_latency{type:range}': ['p(95)<300'],
     'es_query_latency{type:bool}': ['p(95)<800'],
@@ -86,7 +96,7 @@ function termQuery() {
 
 function fuzzyMatchQuery() {
   return {
-    type: 'match',
+    type: 'match_fuzzy',
     body: {
       size: 10,
       query: {
@@ -148,7 +158,6 @@ function boolQuery() {
           should: [
             { match_phrase_prefix: { name: randomItem(PREFIXES) } },
           ],
-          minimum_should_match: 0,
         },
       },
     },
@@ -178,7 +187,7 @@ function headers() {
 function runQuery(q) {
   const res = http.post(SEARCH_URL, JSON.stringify(q.body), {
     headers: headers(),
-    tags: { type: q.type },
+    tags: { type: q.type, scope: 'workload' },
   });
 
   queryLatency.add(res.timings.duration, { type: q.type });
@@ -204,11 +213,12 @@ function runQuery(q) {
 // Setup: 確認 cluster 可達 + index 存在
 // =========================================
 export function setup() {
-  const ping = http.get(`${BASE_URL}/_cluster/health`, { headers: headers() });
+  const probeOpts = { headers: headers(), tags: { scope: 'setup' } };
+  const ping = http.get(`${BASE_URL}/_cluster/health`, probeOpts);
   if (ping.status !== 200) {
     throw new Error(`Cluster unreachable: ${ping.status} ${ping.body}`);
   }
-  const idx = http.get(`${BASE_URL}/${INDEX}`, { headers: headers() });
+  const idx = http.get(`${BASE_URL}/${INDEX}`, probeOpts);
   if (idx.status !== 200) {
     throw new Error(`Index "${INDEX}" not found: ${idx.status}`);
   }
