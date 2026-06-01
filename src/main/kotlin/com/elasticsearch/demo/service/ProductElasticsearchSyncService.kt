@@ -32,7 +32,7 @@ class ProductElasticsearchSyncService(
 		val products = productRepository.findAll()
 		if (products.isEmpty()) return
 
-		val batchSize = 500  // 👈 重點
+		val batchSize = 1000  // 👈 重點
 
 		products.chunked(batchSize).forEachIndexed { idx, batch ->
 

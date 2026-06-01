@@ -11,11 +11,12 @@ import org.springframework.data.elasticsearch.annotations.MultiField
 import org.springframework.data.elasticsearch.annotations.Setting
 import java.time.Instant
 
-@Document(indexName = "products", createIndex = true)
+@Document(indexName = "products")
 @Setting(settingPath = "elasticsearch/products-settings.json")
 @Mapping(mappingPath = "elasticsearch/products-mappings.json")
 data class ProductDocument(
 	@Id
+	@Field(type = FieldType.Long)
 	val id: Long,
 
 	@MultiField(
